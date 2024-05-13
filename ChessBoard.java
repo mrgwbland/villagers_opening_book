@@ -35,13 +35,12 @@ public class ChessBoard extends JPanel {
                     // For now, let's assume all empty squares are legal moves
                     // You can implement the logic for legal moves later
                     // Then, implement logic to move the piece if a legal move is clicked
-                    System.out.println("Legal moves for " + currentPlayer + " at (" + clickedRank + ", " + clickedFile + ")");
                     selectedPiece = board[clickedRank][clickedFile];
                 } else {
                     Piece selectedDestination = board[clickedRank][clickedFile];
                     // Move the piece if a legal move is clicked
                     // For now, let's assume the clicked square is a legal move
-                    if (selectedPiece != null && selectedDestination == null) {
+                    if (selectedPiece != null && (selectedDestination == null||selectedDestination.getColour().equals(currentPlayer)==false)) {
                         board[clickedRank][clickedFile] = selectedPiece;
                         recordMove(selectedPiece.getRank(),selectedPiece.getFile(),clickedRank,clickedFile);
                         board[selectedPiece.getRank()][selectedPiece.getFile()] = null;
@@ -85,8 +84,8 @@ public class ChessBoard extends JPanel {
         initialiseSquare("B", "black", 7, 0);
         initialiseSquare("S", "black", 7, 1);
         initialiseSquare("N", "black", 7, 2);
-        initialiseSquare("R", "black", 7, 3);
-        initialiseSquare("K", "black", 7, 4);
+        initialiseSquare("R", "black", 7, 4);
+        initialiseSquare("K", "black", 7, 3);
         initialiseSquare("N", "black", 7, 5);
         initialiseSquare("S", "black", 7, 6);
         initialiseSquare("B", "black", 7, 7);
@@ -103,7 +102,8 @@ public class ChessBoard extends JPanel {
     public void resetBoard() {
         initialiseBoard();
         repaint();
-
+        moveHistory.setLength(0);
+        currentPlayer = "white";
         String moves = moveHistory.toString();
         String opening = openingRecogniser.identifyOpening(moves);
         GUI.updateOpeningLabel(opening);
@@ -119,7 +119,7 @@ public class ChessBoard extends JPanel {
         char startFileChar = (char) ('0' + startFile);
         char endRankChar = (char) ('0' + endRank);
         char endFileChar = (char) ('0' + endFile);
-        moveHistory.append("P").append(startRankChar).append(startFileChar).append(endRankChar).append(endFileChar);
+        moveHistory.append(board[startRank][startFile].getType()).append(startRankChar).append(startFileChar).append(endRankChar).append(endFileChar);
 
         String moves = moveHistory.toString();
         String opening = openingRecogniser.identifyOpening(moves);

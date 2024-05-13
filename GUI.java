@@ -11,16 +11,22 @@ public class GUI {
     public void createAndShowGUI() {
         frame = new JFrame("Villagers Chess Opening Explorer");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new GridLayout(1, 2)); // Split the frame into two halves
+        frame.setLayout(new BorderLayout()); // Use BorderLayout to position components
 
         chessBoard = new ChessBoard();
-        JPanel infoPanel = new JPanel();
-        infoPanel.setBackground(Color.WHITE); // Blank panel, you can customize this later
+        frame.add(chessBoard, BorderLayout.CENTER);
+
+        JPanel infoPanel = new JPanel(new BorderLayout());
+        infoPanel.setBackground(Color.WHITE);
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(Color.WHITE);
 
         JButton resetButton = new JButton("Reset Board");
         resetButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 chessBoard.resetBoard();
+                updateOpeningLabel("Starting Position");
             }
         });
 
@@ -31,21 +37,20 @@ public class GUI {
             }
         });
 
-        openingLabel = new JLabel();
+        buttonPanel.add(resetButton);
+        buttonPanel.add(flipButton);
+
+        openingLabel = new JLabel("Starting Position");
         openingLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        openingLabel.setPreferredSize(new Dimension(200, 30));
 
-        infoPanel.add(resetButton);
-        infoPanel.add(flipButton);
-        infoPanel.add(openingLabel);
+        infoPanel.add(buttonPanel, BorderLayout.NORTH);
+        infoPanel.add(openingLabel, BorderLayout.CENTER);
 
-        frame.add(chessBoard);
-        frame.add(infoPanel);
+        frame.add(infoPanel, BorderLayout.EAST);
 
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-        updateOpeningLabel("Starting Position");
     }
 
     public static void updateOpeningLabel(String opening) {
