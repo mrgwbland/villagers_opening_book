@@ -3,51 +3,47 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-public class ChessBoard extends JPanel
-{
+public class ChessBoard extends JPanel {
     private static final int BOARD_SIZE = 8;
     private static final int SQUARE_SIZE = 100;
     private Piece[][] board;
-    private Image whitePawnImage;
-    private Image blackPawnImage;
     private String currentPlayer = "white"; // Initial move is for white player
     private Piece selectedPiece = null;
+    private boolean flipped = false;
+    private StringBuilder moveHistory = new StringBuilder();
+    private OpeningRecogniser openingRecogniser;
 
-    public ChessBoard()
-    {
+    public ChessBoard() {
         setPreferredSize(new Dimension(BOARD_SIZE * SQUARE_SIZE, BOARD_SIZE * SQUARE_SIZE));
         setBackground(Color.WHITE);
 
-        // initialise the board with pieces
+        openingRecogniser = new OpeningRecogniser();
+        // Initialise the board with pieces
         initialiseBoard();
 
+
         // Add mouse listener for piece movement
-        addMouseListener(new MouseAdapter()
-        {
+        addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e)
-            {
+            public void mouseClicked(MouseEvent e) {
                 int mouseX = e.getX();
                 int mouseY = e.getY();
-                int clickedRank = BOARD_SIZE - 1 - (mouseY / SQUARE_SIZE); // Calculate rank from bottom to top
-                int clickedFile = mouseX / SQUARE_SIZE;
-                if (board[clickedRank][clickedFile] != null && board[clickedRank][clickedFile].getColour().equals(currentPlayer))
-                {
+                int clickedRank = flipped ? (mouseY / SQUARE_SIZE) : (BOARD_SIZE - 1 - (mouseY / SQUARE_SIZE)); // Calculate rank from bottom to top
+                int clickedFile = flipped ? (BOARD_SIZE - 1 - (mouseX / SQUARE_SIZE)) : (mouseX / SQUARE_SIZE);
+                if (board[clickedRank][clickedFile] != null && board[clickedRank][clickedFile].getColour().equals(currentPlayer)) {
                     // Highlight legal moves
                     // For now, let's assume all empty squares are legal moves
-                    // We can implement the logic for legal moves later
+                    // You can implement the logic for legal moves later
                     // Then, implement logic to move the piece if a legal move is clicked
                     System.out.println("Legal moves for " + currentPlayer + " at (" + clickedRank + ", " + clickedFile + ")");
                     selectedPiece = board[clickedRank][clickedFile];
-                }
-                else
-                {
+                } else {
                     Piece selectedDestination = board[clickedRank][clickedFile];
                     // Move the piece if a legal move is clicked
                     // For now, let's assume the clicked square is a legal move
-                    if (selectedPiece != null&&selectedDestination==null)
-                    {
+                    if (selectedPiece != null && selectedDestination == null) {
                         board[clickedRank][clickedFile] = selectedPiece;
+                        recordMove(selectedPiece.getRank(),selectedPiece.getFile(),clickedRank,clickedFile);
                         board[selectedPiece.getRank()][selectedPiece.getFile()] = null;
                         selectedPiece.setRank(clickedRank);
                         selectedPiece.setFile(clickedFile);
@@ -62,13 +58,11 @@ public class ChessBoard extends JPanel
         });
     }
 
-    private void initialiseSquare(String type, String color, int rank, int file)
-    {
+    private void initialiseSquare(String type, String color, int rank, int file) {
         board[rank][file] = new Piece(type, color, rank, file);
     }
 
-    private void initialiseBoard()
-    {
+    private void initialiseBoard() {
         board = new Piece[BOARD_SIZE][BOARD_SIZE];
 
         initialiseSquare("B", "white", 0, 0);
@@ -78,7 +72,7 @@ public class ChessBoard extends JPanel
         initialiseSquare("K", "white", 0, 4);
         initialiseSquare("N", "white", 0, 5);
         initialiseSquare("S", "white", 0, 6);
-        initialiseSquare("B", "white", 0,7);
+        initialiseSquare("B", "white", 0, 7);
         initialiseSquare("P", "white", 1, 0);
         initialiseSquare("P", "white", 1, 1);
         initialiseSquare("P", "white", 1, 2);
@@ -87,7 +81,7 @@ public class ChessBoard extends JPanel
         initialiseSquare("P", "white", 1, 5);
         initialiseSquare("P", "white", 1, 6);
         initialiseSquare("P", "white", 1, 7);
-        
+
         initialiseSquare("B", "black", 7, 0);
         initialiseSquare("S", "black", 7, 1);
         initialiseSquare("N", "black", 7, 2);
@@ -95,7 +89,7 @@ public class ChessBoard extends JPanel
         initialiseSquare("K", "black", 7, 4);
         initialiseSquare("N", "black", 7, 5);
         initialiseSquare("S", "black", 7, 6);
-        initialiseSquare("B", "black", 7,7);
+        initialiseSquare("B", "black", 7, 7);
         initialiseSquare("P", "black", 6, 0);
         initialiseSquare("P", "black", 6, 1);
         initialiseSquare("P", "black", 6, 2);
@@ -106,40 +100,63 @@ public class ChessBoard extends JPanel
         initialiseSquare("P", "black", 6, 7);
     }
 
+    public void resetBoard() {
+        initialiseBoard();
+        repaint();
+
+        String moves = moveHistory.toString();
+        String opening = openingRecogniser.identifyOpening(moves);
+        GUI.updateOpeningLabel(opening);
+    }
+
+    public void flipBoard() {
+        flipped = !flipped;
+        repaint();
+    }
+
+    public void recordMove(int startRank, int startFile, int endRank, int endFile) {
+        char startRankChar = (char) ('0' + startRank);
+        char startFileChar = (char) ('0' + startFile);
+        char endRankChar = (char) ('0' + endRank);
+        char endFileChar = (char) ('0' + endFile);
+        moveHistory.append("P").append(startRankChar).append(startFileChar).append(endRankChar).append(endFileChar);
+
+        String moves = moveHistory.toString();
+        String opening = openingRecogniser.identifyOpening(moves);
+        GUI.updateOpeningLabel(opening);
+    }
+
     @Override
-    protected void paintComponent(Graphics g)
-    {
+    protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         // Draw the board
-        for (int rank = 0; rank < BOARD_SIZE; rank++)
-        { 
-            for (int file = 0; file < BOARD_SIZE; file++)
-            { 
-                if ((rank + file) % 2 == 0)
-                {
+        for (int rank = 0; rank < BOARD_SIZE; rank++) {
+            for (int file = 0; file < BOARD_SIZE; file++) {
+                if ((rank + file) % 2 == 0) {
                     g.setColor(Color.GRAY);
-                }
-                else
-                {
+                } else {
                     g.setColor(Color.WHITE);
                 }
-                g.fillRect(file * SQUARE_SIZE, (BOARD_SIZE - 1 - rank) * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+                int x, y;
+                if (flipped) {
+                    x = (BOARD_SIZE - 1 - file) * SQUARE_SIZE;
+                    y = rank * SQUARE_SIZE;
+                } else {
+                    x = file * SQUARE_SIZE;
+                    y = (BOARD_SIZE - 1 - rank) * SQUARE_SIZE;
+                }
+                g.fillRect(x, y, SQUARE_SIZE, SQUARE_SIZE);
             }
         }
         // Draw the pieces
-        for (int rank = 0; rank < BOARD_SIZE; rank++)
-        { 
-            for (int file = 0; file < BOARD_SIZE; file++)
-            { 
-                Piece piece = board[rank][file]; 
-                if (piece != null)
-                {
+        for (int rank = 0; rank < BOARD_SIZE; rank++) {
+            for (int file = 0; file < BOARD_SIZE; file++) {
+                Piece piece = board[rank][file];
+                if (piece != null) {
                     Image image = null;
-                    switch (piece.getColour())
-                    {
+                    switch (piece.getColour()) {
                         case "white":
-                            switch (piece.getType())
-                            {
+                            switch (piece.getType()) {
                                 case "K":
                                     image = new ImageIcon("RoyalPawnW.png").getImage();
                                     break;
@@ -164,8 +181,7 @@ public class ChessBoard extends JPanel
                             }
                             break;
                         case "black":
-                            switch (piece.getType())
-                            {
+                            switch (piece.getType()) {
                                 case "K":
                                     image = new ImageIcon("RoyalPawnB.png").getImage();
                                     break;
@@ -193,9 +209,16 @@ public class ChessBoard extends JPanel
                             // Handle error or default case
                             break;
                     }
-                    if (image != null)
-                    {
-                        g.drawImage(image, file * SQUARE_SIZE, (BOARD_SIZE - 1 - rank) * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE, null); 
+                    if (image != null) {
+                        int x, y;
+                        if (flipped) {
+                            x = (BOARD_SIZE - 1 - file) * SQUARE_SIZE;
+                            y = rank * SQUARE_SIZE;
+                        } else {
+                            x = file * SQUARE_SIZE;
+                            y = (BOARD_SIZE - 1 - rank) * SQUARE_SIZE;
+                        }
+                        g.drawImage(image, x, y, SQUARE_SIZE, SQUARE_SIZE, null);
                     }
                 }
             }
